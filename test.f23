@@ -4,4 +4,10 @@ abc
 abc123
 123abc
 abc+123
----
+wanted! { 
+{ 
+();
+"back"
+love.
+!on
+// comment

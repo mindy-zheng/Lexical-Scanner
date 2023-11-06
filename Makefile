@@ -1,6 +1,6 @@
 CC = gcc 
 
-CFLAGS = -Wall -Wextra -g 
+CFLAGS = -Wall -Wextra -g -std=gnu99 
 
 src = main.c scanner.c testScanner.c
 
