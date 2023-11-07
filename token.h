@@ -10,9 +10,9 @@
 using namespace std; 
 
 // KEYWORDS: Start with X, then KEYWORD:
-const string keywords[] = {
+/*const string keywords[] = {
 	"xopen", "xclose", "xloop", "xdata", "xexit", "xin", "xout", "xcond", "xthen", "xlet", "xfunc" }
-/*
+
  * 0, 1, etc would be states (using rows if states counted from 0)
  * -1, -2, etc. could be different errors
  * 1001, 1002, etc could be final states recognizing different tokens
@@ -27,7 +27,7 @@ enum tokenID {
 	DELIMITER_TOKEN = 1006; 
 	EOF_TOKEN = 1007; 
 	LEXICAL_ERROR = -1; 
-} 
+};  
 
 // Matching tokenID using unordered map 
 unordered_map<tokenID, string> tokenNames = {
@@ -45,11 +45,11 @@ unordered_map<tokenID, string> tokenNames = {
 const int finalState[] = {1001, 1002, 1003, 1004, 1005, 1006, 1007, -1}; 
 	
 
-typedef struct token { 
-	TokenType tokenID; 
+typedef struct Token { 
+	tokenID tokenType; 
 	string tokenInstance; 
 	int lineNumber; 
-} token; 
+} Token; 
 
 #endif
 

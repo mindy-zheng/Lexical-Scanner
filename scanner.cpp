@@ -1,7 +1,8 @@
 #include "token.h" 
 #include "scanner.h"
 #include <iostream>
-#include <fstream> 
+#include <fstream>
+#include <cctype>  
 #include <fstream>
 #include <stdlib.h> 
 #include <string> 
@@ -24,7 +25,7 @@ Implementing 2D FSA table:
  *   -1: Lexical Error 
 */ 
 
-const int FSA_Table[7][27] = 
+const int FSA_Table[7][27] = { 
 	// A-Z  a-z  0-9   WS     $     =    <<    >>    >    <    ~    :    ;    +    -    *    /    %    .    (    )    ,    {    }    [    ]  EOF 
 /* S0 */ { -1,   1,   5,    0,    2,    4,    4,    4,   4,   4,   4,   6,   6,   4,   4,   4,   4,   4,   4,   6,   6,   6,   6,   6,   6,   6,1007}, 
 /* S1 */ {  2,   2,   2, 1001, 1001, 1001, 1001, 1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001},  
@@ -36,34 +37,122 @@ const int FSA_Table[7][27] =
 }; 
 
 int lineNum = 1; 
-const int length = 8; // No integer constant or ID should be over this 
-ifstream file; 
+const int max_length = 8; // No integer constant or ID should be over this 
+string prefix = ""; 
 
-Token scanner() { 
+Token scanner(istream &file) { 
 	int state = 0; // Start at initial state 
+	int next_state = 0; 
 	string instance; 
-	
-	while (true) { 
-		char ch = file.get(); // get next char 
-		if (ch == '\n') { lineNum++; } // increment line number every time WS 
-		
+	Token token; 
+	string str = prefix + ""; 
+
+	while (state > = 0 && state < 1000) { 
+		char ch = file.get(ch); // get next char 
+		char next_ch file.peek(); // peek at next char (for <<, >>) 
 		int col = getFSAColumn(ch); 
 		
-		// get next state: 
-		state = FSA_Table[state][col]; 
+		if (col == -1) { 
+			token.tokenType = LEXICAL_ERROR; 
+			token.tokenInstance = str + ch; 
+			token.lineNumber = lineNum; 
+			return token; 
+		} 
+		// Specific state cases:
+		// 1. No more than 8 characters for intege and identifiers
+		// 2. >> & <<
+		// 3. keyword identifier -- x followed by keyword
+				
+		if ((ch == '<' && next_ch == '<') || (ch == '>' && next_ch == '>')) { 
+			if (ch == '<') { 
+				col = 6; 
+			} else { 
+				col = 7; 
+			} 
+			file.get(); 
+		} 
+		
+		// Get next state: 
+		next_state = FSA_Table[state][col]; 
+		if ((next_state == 1001 || next_state == 1005) && str.length() > 8) { 
+			token.tokenType = LEXICAL_ERROR; 
+			token.tokenInstance = str; 
+			token.lineNumber = lineNum; 
+			return token; 
+		} 
+		if (next_state == 1001 && str[0] == 'x' && identifyKeyword(str)) { 
+			next_state == 1002; 
+		} 
 
-		// state cases: 
-		if (state == -1) { 
-			lexicalError(lineNum); 
-			return Token{LEXICAL_ERROR, instance, lineNum}; 
-		} else if (state >= 1000) { 
-			// final state cases
-			return Token{(TokenType)(state-1000), instance, lineNum}; 
-		} else { 
+		if (!isspace(ch)) { 
 			instance += ch; 
+		} 
+		state = next_state; // update the current state 
+		
+		if (ch == '\n') { 
+			lineNum++; 
+		} 
+	}
+	// For all final tokens, create and return: 
+	if (state >= 1000) { 
+		return createToken(instance, state); 
+	} else { 
+		// for all lexical errors: 
+		lexicalError(lineNum); 
+		return Token{Lexical_ERROR, instance, lineNum}; 
+	}
+} 
+	
+
+
+
+Token createToken(string instance, int finalState) {
+	Token tkn;
+	
+	// Final state tokens: 
+	switch (final_state) { 
+		case 1001: 
+			token.type = ID_TOKEN; 
+			break; 
+		case 1002:
+            		tkn.type = KEYWORD_TOKEN;
+            		break;
+        	case 1003:
+            		tkn.type = COMMENT_TOKEN;
+            		break;
+        	case 1004:
+            		tkn.type = OP_TOKEN;
+           		break;
+        	case 1005:
+            		tkn.type = INTEGER_TOKEN;
+            		break;
+        	case 1006:
+            		tkn.type = DELIMITER_TOKEN;
+            		break;
+       		case 1007:
+            		tkn.type = EOF_TOKEN;
+            		break;
+        	default:
+            		tkn.type = LEXICAL_ERROR;
+            		break;
+		}
+	
+		tkn.instance = instance; 
+		tkn.lineNum = lineNum; 
+		return tkn;
+}
+
+bool identifyKeyword(const string &str) { 
+	const string keywords[] = {
+		"xopen", "xclose", "xloop", "xdata", "xexit", "xin", "xout", "xcond", "xthen", "xlet", "xfunc" }; 
+	for (const string &keyword: keywords) { 
+		if (str == keyword) { 
+			return true; 
 		}
 	}
+	return false; 
 }
+
 
 int getFSAColumn(char input) { 
 	if (isalpha(input)) { 
