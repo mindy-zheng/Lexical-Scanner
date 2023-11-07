@@ -1,25 +1,20 @@
-CC = g++ 
-CLAGS = -std=c++11 -Wall
+CPP = g++ 
 
-SRC = scanner.cpp testScanner.cpp main.cpp
+CPP_FLAGS = -std=c++11 -Wall
 
-OBJ = $(SRC:.c=.o) 
+TARGET = P1 
 
-EXE = P1
+CPP_FILES = main.cpp scanner.cpp testScanner.cpp
 
-all: $(EXE) 
+OBJ = $(CPP_FILES:.cpp=.o) 
 
-scanner.o: scanner.cpp scanner.h token.h
-	$(CC) $(CFLAGS) -c scanner.c
+all: $(TARGET) 
 
-testScanner.o: testScanner.cpp testScanner.h scanner.h token.h
-	$(CC) $(CFLAGS) -c testScanner.c
+$(TARGET): $(OBJ) 
+	$(CPP) $(CPP_FLAGS) -o $(TARGET) $(OBJ) 
 
-main.o: main.cpp scanner.h token.h
-	$(CC) $(CFLAGS) -c main.c
+%.o: %.cpp 
+	$(CPP) $(CPP_FLAGS) -c $< -o $@
 
-$(EXE): $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $(OBJ)
-
-clean:
-	rm -f $(OBJ) $(EXE)
+clean: 
+	rm -f $(OBJ) $(TARGET) 

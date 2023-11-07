@@ -47,10 +47,14 @@ Token scanner(istream &file) {
 	Token token; 
 	string str = prefix + ""; 
 
-	while (state > = 0 && state < 1000) { 
-		char ch = file.get(ch); // get next char 
-		char next_ch file.peek(); // peek at next char (for <<, >>) 
+	while (state >= 0 && state < 1000) { 
+		char ch = file.get(); // get next char 
+		char next_ch = file.peek(); // peek at next char (for <<, >>) 
 		int col = getFSAColumn(ch); 
+		
+		if (file.eof()) { 
+			return createToken("", EOF_TOKEN); 
+		}
 		
 		if (col == -1) { 
 			token.tokenType = LEXICAL_ERROR; 
@@ -81,7 +85,7 @@ Token scanner(istream &file) {
 			return token; 
 		} 
 		if (next_state == 1001 && str[0] == 'x' && identifyKeyword(str)) { 
-			next_state == 1002; 
+			next_state = 1002; 
 		} 
 
 		if (!isspace(ch)) { 
@@ -99,52 +103,52 @@ Token scanner(istream &file) {
 	} else { 
 		// for all lexical errors: 
 		lexicalError(lineNum); 
-		return Token{Lexical_ERROR, instance, lineNum}; 
+		return Token{LEXICAL_ERROR, instance, lineNum}; 
 	}
 } 
 	
 
 
 
-Token createToken(string instance, int finalState) {
+Token createToken(string instance, int final_state) {
 	Token tkn;
 	
 	// Final state tokens: 
 	switch (final_state) { 
 		case 1001: 
-			token.type = ID_TOKEN; 
+			tkn.tokenType = ID_TOKEN; 
 			break; 
 		case 1002:
-            		tkn.type = KEYWORD_TOKEN;
+            		tkn.tokenType = KEYWORD_TOKEN;
             		break;
         	case 1003:
-            		tkn.type = COMMENT_TOKEN;
+            		tkn.tokenType = COMMENT_TOKEN;
             		break;
         	case 1004:
-            		tkn.type = OP_TOKEN;
+            		tkn.tokenType = OP_TOKEN;
            		break;
         	case 1005:
-            		tkn.type = INTEGER_TOKEN;
+            		tkn.tokenType = INTEGER_TOKEN;
             		break;
         	case 1006:
-            		tkn.type = DELIMITER_TOKEN;
+            		tkn.tokenType = DELIMITER_TOKEN;
             		break;
        		case 1007:
-            		tkn.type = EOF_TOKEN;
+            		tkn.tokenType = EOF_TOKEN;
             		break;
         	default:
-            		tkn.type = LEXICAL_ERROR;
+            		tkn.tokenType = LEXICAL_ERROR;
             		break;
 		}
 	
-		tkn.instance = instance; 
-		tkn.lineNum = lineNum; 
+		tkn.tokenInstance = instance; 
+		tkn.lineNumber = lineNum; 
 		return tkn;
 }
 
 bool identifyKeyword(const string &str) { 
 	const string keywords[] = {
-		"xopen", "xclose", "xloop", "xdata", "xexit", "xin", "xout", "xcond", "xthen", "xlet", "xfunc" }; 
+		"open", "close", "loop", "data", "exit", "in", "out", "cond", "then", "let", "func" }; 
 	for (const string &keyword: keywords) { 
 		if (str == keyword) { 
 			return true; 
@@ -189,9 +193,10 @@ int getFSAColumn(char input) {
 			case '}': return 23; 
 			case '[': return 24; 
 			case ']': return 25;
-			case 'EOF': return 26;
+			//case 'EOF': return 26;
 		}
-	}
+	} 
+	return -1; // Lexical Error 
 }
 
 void lexicalError(int lineNum) { 
