@@ -8,7 +8,7 @@
 Token scanner(istream &file); // Get next token 
 int getFSAColumn(char ch); 
 void lexicalError(int lineNum); // Throws error 
-bool identifyKeyword(const string &str);
+bool identifyKeyword(const string &instance);
 Token createToken(string instance, int final_state);  
 	
 

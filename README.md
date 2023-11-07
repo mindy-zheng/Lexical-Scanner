@@ -20,9 +20,10 @@ HOW TO RUN:
 Option 1: Enter: ./P1 test1.f23 
 	- or any testing file you'd like to use.
 	- I created all testing files provided
-Option 2: Enter: ./P1 [input] 
-	- in which input is of your choosing. 
+	- Similar to P0, .f23 will be append if not provided by user 
+Option 2: Enter: ./P1 
+	- It will make a new line for you to enter input: 
+	- example input: x xy xaw
 
 I have 6 files: token.h, scanner.h, scanner.c, testScanner.c, testScanner.h, and main.c
 
-token.h - defines the token type: tokenID, token instance, and line number. 

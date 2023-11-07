@@ -29,7 +29,7 @@ const int FSA_Table[7][27] = {
 	// A-Z  a-z  0-9   WS     $     =    <<    >>    >    <    ~    :    ;    +    -    *    /    %    .    (    )    ,    {    }    [    ]  EOF 
 /* S0 */ { -1,   1,   5,    0,    2,    4,    4,    4,   4,   4,   4,   6,   6,   4,   4,   4,   4,   4,   4,   6,   6,   6,   6,   6,   6,   6,1007}, 
 /* S1 */ {  2,   2,   2, 1001, 1001, 1001, 1001, 1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001},  
-/* S2 */ {  2,   2,   2,   -1,    3,    2,    2,    2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2}, 	
+/* S2 */ {  2,   2,   2, 1001,    3,    2,    2,    2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2}, 	
 /* S3 */ {1003,1003,1003,1003, 1003, 1003, 1003, 1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003},
 /* S4 */ {1004,1004,1004,1004, 1004,    4, 1004, 1004,   4,   4,   4,1004,1004,   4,   4,   4,   4,   4,   4,1004,1004,1004,1004,1004,1004,1004,1004},
 /* S5 */ {1005,1005,  5, 1005, 1005, 1005, 1005, 1005,1005,1005,1005,1005,1005,1005,  -1,1005,1005,1005,  -1,1005,1005,1005,1005,1005,1005,1005,1005},
@@ -38,6 +38,7 @@ const int FSA_Table[7][27] = {
 
 int lineNum = 1; 
 const int max_length = 8; // No integer constant or ID should be over this 
+const string keywords[] = { "xopen", "xclose", "xloop", "xdata", "xexit", "xin", "xout", "xcond", "xthen", "xlet", "xfunc" };
 string prefix = ""; 
 
 Token scanner(istream &file) { 
@@ -68,25 +69,60 @@ Token scanner(istream &file) {
 		// 3. keyword identifier -- x followed by keyword
 				
 		if ((ch == '<' && next_ch == '<') || (ch == '>' && next_ch == '>')) { 
-			if (ch == '<') { 
-				col = 6; 
-			} else { 
-				col = 7; 
-			} 
-			file.get(); 
+			instance += ch; 
+			instance += next_ch; 
+			file.get(); // next char
+			col = getFSAColumn(next_ch); 
 		} 
-		
+	
 		// Get next state: 
 		next_state = FSA_Table[state][col]; 
-		if ((next_state == 1001 || next_state == 1005) && str.length() > 8) { 
-			token.tokenType = LEXICAL_ERROR; 
-			token.tokenInstance = str; 
-			token.lineNumber = lineNum; 
-			return token; 
-		} 
-		if (next_state == 1001 && str[0] == 'x' && identifyKeyword(str)) { 
-			next_state = 1002; 
-		} 
+		
+		// Identifier check 
+		if (next_state == 1001 || next_state == 1005) { 
+			instance += ch;
+			
+			if (instance.length() > max_length) { 
+				token.tokenType = LEXICAL_ERROR; 
+				token.tokenInstance = str; 
+				token.lineNumber = lineNum; 
+				return token; 
+			} 
+			// Check if ID is a reserved keyword 
+			if (ch=='x') {
+                		state = 1002; // A potential keyword
+				instance = "x"; 
+           		}
+       		}
+
+		
+		if (state == 1002) {
+			if (isalpha(ch)) { 
+				instance += ch; 
+			} else {
+				if (identifyKeyword(instance)) { 
+				//cout << "Keyword detected: " << instance << endl;
+				//next_state = 1002; 
+				token.tokenType = KEYWORD_TOKEN;
+                        	token.tokenInstance = instance;
+                        	token.lineNumber = lineNum;
+                        	return token;
+			} else { 
+				state = 1001; 
+			}
+		}
+		}
+		
+		cout << "Next state: " << next_state << endl; // Debug statement
+
+	    	//Debug statement: cout << "ch: " << ch << ", state: " << state << ", next_state: " << next_state << ", instance: " << instance << endl;
+		/*
+		 if (next_state == 1002) {
+                	token.tokenType = KEYWORD_TOKEN;
+ 			token.tokenInstance = instance;
+ 			token.lineNumber = lineNum;
+ 			return token;
+                } */ 
 
 		if (!isspace(ch)) { 
 			instance += ch; 
@@ -146,17 +182,25 @@ Token createToken(string instance, int final_state) {
 		return tkn;
 }
 
-bool identifyKeyword(const string &str) { 
-	const string keywords[] = {
-		"open", "close", "loop", "data", "exit", "in", "out", "cond", "then", "let", "func" }; 
-	for (const string &keyword: keywords) { 
-		if (str == keyword) { 
-			return true; 
-		}
-	}
-	return false; 
-}
+bool identifyKeyword(const string &instance) { 
+	for (const string &keyword : keywords) {
+        //Check if the identifier matches a keyword or starts with 'x' and matches the rest of a keyword
+        	if (instance == keyword || (instance[0] == 'x' && instance.substr(1) == keyword)) {
+        		return true;
+                }
+        }
+        return false;
 
+	/*const string keywords[] = {
+		"xopen", "xclose", "xloop", "xdata", "xexit", "xin", "xout", "xcond", "xthen", "xlet", "xfunc" }; 
+	for (int i = 0; i < 11; i++) { 
+		if (instance == keywords[i]) { 
+			return true; 
+		} 
+	}
+
+	return false; */
+}
 
 int getFSAColumn(char input) { 
 	if (isalpha(input)) { 
