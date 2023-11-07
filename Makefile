@@ -1,7 +1,7 @@
 CC = g++ 
 CLAGS = -std=c++11 -Wall
 
-SRC = scanner.c testScanner.c main.c
+SRC = scanner.cpp testScanner.cpp main.c
 
 OBJ = $(SRC:.c=.o) 
 

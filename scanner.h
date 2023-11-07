@@ -4,7 +4,8 @@
 #include <iostream>
 #include "token.h" 
 
-Token scanner(istream &input); 
-int getColumn(char ch); 
+Token scanner(); // Get next token 
+int getFSAColumn(char ch); 
+void lexicalError(int lineNum); // Throws error 
 
 #endif 
