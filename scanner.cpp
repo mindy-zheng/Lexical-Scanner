@@ -8,7 +8,7 @@
 #include <string> 
 #include <stdio.h> 
 
-using namespace std; 
+using namespace std;
 
 /* After designing FSA, represent the 2-d array representation for the FSA as array of integers
 
@@ -31,7 +31,7 @@ const int FSA_Table[7][27] = {
 /* S1 */ {  2,   2,   2, 1001, 1001, 1001, 1001, 1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001},  
 /* S2 */ {  2,   2,   2, 1001,    3,    2,    2,    2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2}, 	
 /* S3 */ {1003,1003,1003,1003, 1003, 1003, 1003, 1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003},
-/* S4 */ {1004,1004,1004,1004, 1004,    4, 1004, 1004,   4,   4,   4,1004,1004,   4,   4,   4,   4,   4,   4,1004,1004,1004,1004,1004,1004,1004,1004},
+/* S4 */ {1004,1004,1004,1004, 1004,    4,    4,    4,   4,   4,   4,1004,1004,   4,   4,   4,   4,   4,   4,1004,1004,1004,1004,1004,1004,1004,1004},
 /* S5 */ {1005,1005,  5, 1005, 1005, 1005, 1005, 1005,1005,1005,1005,1005,1005,1005,  -1,1005,1005,1005,  -1,1005,1005,1005,1005,1005,1005,1005,1005},
 /* S6 */ {1006,1006,1006,1006, 1006, 1006, 1006, 1006,1006,1006,1006,   6,   6,1006,1006,1006,1006,1006,1006,   6,   6,   6,   6,   6,   6,   6,1006},
 }; 
@@ -49,10 +49,16 @@ Token scanner(istream &file) {
 	string str = prefix + ""; 
 
 	while (state >= 0 && state < 1000) { 
-		char ch = file.get(); // get next char 
-		char next_ch = file.peek(); // peek at next char (for <<, >>) 
+		char ch = file.get(); 	
 		int col = getFSAColumn(ch); 
 		
+		// DEBUG: cout << "Character: " << ch << ", Column: " << col << ", State: " << state << ", Next State: " << next_state << ", String: " << str << endl
+		// Specific state cases:
+		// 1. No more than 8 characters for integer and identifiers
+		// 2. Accept '>>' and '<<' as single token
+		// 3. keyword identifier -- x followed by keyword
+
+	
 		if (file.eof()) { 
 			return createToken("", EOF_TOKEN); 
 		}
@@ -62,145 +68,101 @@ Token scanner(istream &file) {
 			token.tokenInstance = str + ch; 
 			token.lineNumber = lineNum; 
 			return token; 
-		} 
-		// Specific state cases:
-		// 1. No more than 8 characters for intege and identifiers
-		// 2. >> & <<
-		// 3. keyword identifier -- x followed by keyword
-				
-		if ((ch == '<' && next_ch == '<') || (ch == '>' && next_ch == '>')) { 
-			instance += ch; 
-			instance += next_ch; 
-			file.get(); // next char
-			col = getFSAColumn(next_ch); 
-		} 
-	
-		// Get next state: 
+		}
+		
+		//cout << "Current state: " << state << ", Character: " << ch << endl;
+		// Get next state:
 		next_state = FSA_Table[state][col]; 
-		
-		// Identifier check 
-		if (next_state == 1001 || next_state == 1005) { 
-			instance += ch;
-			
-			if (instance.length() > max_length) { 
-				token.tokenType = LEXICAL_ERROR; 
-				token.tokenInstance = str; 
-				token.lineNumber = lineNum; 
-				return token; 
-			} 
-			// Check if ID is a reserved keyword 
-			if (ch=='x') {
-                		state = 1002; // A potential keyword
-				instance = "x"; 
-           		}
-       		}
 
-		
-		if (state == 1002) {
-			if (isalpha(ch)) { 
-				instance += ch; 
-			} else {
-				if (identifyKeyword(instance)) { 
-				//cout << "Keyword detected: " << instance << endl;
-				//next_state = 1002; 
-				token.tokenType = KEYWORD_TOKEN;
-                        	token.tokenInstance = instance;
-                        	token.lineNumber = lineNum;
-                        	return token;
-			} else { 
-				state = 1001; 
-			}
-		}
-		}
-		
-		cout << "Next state: " << next_state << endl; // Debug statement
 
-	    	//Debug statement: cout << "ch: " << ch << ", state: " << state << ", next_state: " << next_state << ", instance: " << instance << endl;
-		/*
-		 if (next_state == 1002) {
-                	token.tokenType = KEYWORD_TOKEN;
- 			token.tokenInstance = instance;
- 			token.lineNumber = lineNum;
- 			return token;
-                } */ 
+		if (!isspace(ch)) str+=ch;
 
-		if (!isspace(ch)) { 
-			instance += ch; 
+		// Final state checker: 
+		if (next_state == ID_TOKEN || next_state == KEYWORD_TOKEN || next_state == COMMENT_TOKEN || next_state == OP_TOKEN || next_state == INTEGER_TOKEN || next_state == DELIMITER_TOKEN || next_state == EOF_TOKEN) {
+			token = createToken(str, next_state); 
+			state = 0; 
+		}  
+		state = next_state;
+ 
+		if (next_state == 1003) { 
+			str = ""; 
+			next_state = 0; 
+			state = 0; 
 		} 
-		state = next_state; // update the current state 
-		
-		if (ch == '\n') { 
-			lineNum++; 
-		} 
-	}
-	// For all final tokens, create and return: 
-	if (state >= 1000) { 
-		return createToken(instance, state); 
-	} else { 
-		// for all lexical errors: 
-		lexicalError(lineNum); 
-		return Token{LEXICAL_ERROR, instance, lineNum}; 
-	}
-} 
 	
+		if (next_state >= 1000 || next_state < 0) {
+			string tokenInstance = str; 
+			token = createToken(tokenInstance, next_state); 
+			return token; 
+		} 
 
-
+		if (ch == '\n') lineNum++; 
+		} 
+		
+		token.tokenType = LEXICAL_ERROR; 
+		token.tokenInstance = str;
+                token.lineNumber = lineNum;	
+		
+		return token; 
+		} 
 
 Token createToken(string instance, int final_state) {
-	Token tkn;
+	// DEBUG:cout << "Creating token with instance: " << instance << endl;
+	Token token;
 	
 	// Final state tokens: 
-	switch (final_state) { 
+	switch (final_state) {
+		// Check for keywords here:  
 		case 1001: 
-			tkn.tokenType = ID_TOKEN; 
-			break; 
+			for (const string &keyword : keywords) {
+                		if (keyword.compare(instance) == 0) {
+                    			token.tokenType = KEYWORD_TOKEN;
+					break;
+			} else { 
+				token.tokenType = ID_TOKEN;
+			}
+		}
+		// check if identifier exceeds 8 characters: 
+		if (instance.length() > max_length) { 
+			cout << "This exceeds 8 max characters" << endl; 
+			token.tokenType = LEXICAL_ERROR;
+		}
+		break;  
 		case 1002:
-            		tkn.tokenType = KEYWORD_TOKEN;
+            		token.tokenType = KEYWORD_TOKEN;
             		break;
         	case 1003:
-            		tkn.tokenType = COMMENT_TOKEN;
+            		token.tokenType = COMMENT_TOKEN;
             		break;
         	case 1004:
-            		tkn.tokenType = OP_TOKEN;
+            		token.tokenType = OP_TOKEN;
            		break;
         	case 1005:
-            		tkn.tokenType = INTEGER_TOKEN;
+			// Check for integer exceeding 8 integers: 
+			if (instance.length() > max_length) { 
+				cout << "This exceeds 8 max characters" << endl;
+                        	token.tokenType = LEXICAL_ERROR;
+            		} else {
+				token.tokenType = INTEGER_TOKEN;
+			}
             		break;
         	case 1006:
-            		tkn.tokenType = DELIMITER_TOKEN;
+            		token.tokenType = DELIMITER_TOKEN;
             		break;
        		case 1007:
-            		tkn.tokenType = EOF_TOKEN;
+            		token.tokenType = EOF_TOKEN;
             		break;
         	default:
-            		tkn.tokenType = LEXICAL_ERROR;
+            		token.tokenType = LEXICAL_ERROR;
             		break;
 		}
 	
-		tkn.tokenInstance = instance; 
-		tkn.lineNumber = lineNum; 
-		return tkn;
+		token.tokenInstance = instance;
+		//cout << "Token Instance: " << token.tokenInstance << endl; 
+		token.lineNumber = lineNum; 
+		return token;
 }
 
-bool identifyKeyword(const string &instance) { 
-	for (const string &keyword : keywords) {
-        //Check if the identifier matches a keyword or starts with 'x' and matches the rest of a keyword
-        	if (instance == keyword || (instance[0] == 'x' && instance.substr(1) == keyword)) {
-        		return true;
-                }
-        }
-        return false;
-
-	/*const string keywords[] = {
-		"xopen", "xclose", "xloop", "xdata", "xexit", "xin", "xout", "xcond", "xthen", "xlet", "xfunc" }; 
-	for (int i = 0; i < 11; i++) { 
-		if (instance == keywords[i]) { 
-			return true; 
-		} 
-	}
-
-	return false; */
-}
 
 int getFSAColumn(char input) { 
 	if (isalpha(input)) { 
