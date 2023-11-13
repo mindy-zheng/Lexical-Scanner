@@ -25,16 +25,18 @@ Implementing 2D FSA table:
  *   -1: Lexical Error 
 */ 
 
+
 const int FSA_Table[7][27] = { 
 	// A-Z  a-z  0-9   WS     $     =    <<    >>    >    <    ~    :    ;    +    -    *    /    %    .    (    )    ,    {    }    [    ]  EOF 
 /* S0 */ { -1,   1,   5,    0,    2,    4,    4,    4,   4,   4,   4,   6,   6,   4,   4,   4,   4,   4,   4,   6,   6,   6,   6,   6,   6,   6,1007}, 
 /* S1 */ {  2,   2,   2, 1001, 1001, 1001, 1001, 1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001},  
 /* S2 */ {  2,   2,   2, 1001,    3,    2,    2,    2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2}, 	
 /* S3 */ {1003,1003,1003,1003, 1003, 1003, 1003, 1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003},
-/* S4 */ {1004,1004,1004,1004, 1004,    4,    4,    4,   4,   4,   4,1004,1004,   4,   4,   4,   4,   4,   4,1004,1004,1004,1004,1004,1004,1004,1004},
+/* S4 */ {1004,1004,1004,1004, 1004, 1004, 1004, 1004,   4,   4,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004},
 /* S5 */ {1005,1005,  5, 1005, 1005, 1005, 1005, 1005,1005,1005,1005,1005,1005,1005,  -1,1005,1005,1005,  -1,1005,1005,1005,1005,1005,1005,1005,1005},
 /* S6 */ {1006,1006,1006,1006, 1006, 1006, 1006, 1006,1006,1006,1006,   6,   6,1006,1006,1006,1006,1006,1006,   6,   6,   6,   6,   6,   6,   6,1006},
 }; 
+
 
 int lineNum = 1; 
 const int max_length = 8; // No integer constant or ID should be over this 
@@ -44,70 +46,72 @@ string prefix = "";
 Token scanner(istream &file) { 
 	int state = 0; // Start at initial state 
 	int next_state = 0; 
-	string instance; 
+	string instance;
 	Token token; 
-	string str = prefix + ""; 
+	string str = prefix + "";
 
 	while (state >= 0 && state < 1000) { 
-		char ch = file.get(); 	
-		int col = getFSAColumn(ch); 
+		char ch = file.get(); 
+		int col = getFSAColumn(ch);
 		
-		// DEBUG: cout << "Character: " << ch << ", Column: " << col << ", State: " << state << ", Next State: " << next_state << ", String: " << str << endl
+		//cout << "Character: " << ch << ", Column: " << col << ", State: " << state << ", Next State: " << next_state << ", String: " << str << endl;
 		// Specific state cases:
 		// 1. No more than 8 characters for integer and identifiers
 		// 2. Accept '>>' and '<<' as single token
 		// 3. keyword identifier -- x followed by keyword
 
 	
-		if (file.eof()) { 
-			return createToken("", EOF_TOKEN); 
+		if (file.eof()) {
+			return createToken("", EOF_TOKEN);
 		}
-		
+	
 		if (col == -1) { 
 			token.tokenType = LEXICAL_ERROR; 
 			token.tokenInstance = str + ch; 
 			token.lineNumber = lineNum; 
-			return token; 
+			return token;  
 		}
-		
-		//cout << "Current state: " << state << ", Character: " << ch << endl;
-		// Get next state:
+
 		next_state = FSA_Table[state][col]; 
+		//cout << "Current state: " << state << ", Next state: " << next_state << endl;
 
-
-		if (!isspace(ch)) str+=ch;
-
+		//if (!isspace(ch)) str += ch; 
+	
 		// Final state checker: 
 		if (next_state == ID_TOKEN || next_state == KEYWORD_TOKEN || next_state == COMMENT_TOKEN || next_state == OP_TOKEN || next_state == INTEGER_TOKEN || next_state == DELIMITER_TOKEN || next_state == EOF_TOKEN) {
 			token = createToken(str, next_state); 
+			instance = ""; 
 			state = 0; 
-		}  
-		state = next_state;
- 
+			return token; 
+		} else if (!isspace(ch)) {
+			str += ch; 
+		} 
+		
+		state = next_state; 
 		if (next_state == 1003) { 
 			str = ""; 
 			next_state = 0; 
 			state = 0; 
 		} 
-	
+		
 		if (next_state >= 1000 || next_state < 0) {
 			string tokenInstance = str; 
 			token = createToken(tokenInstance, next_state); 
 			return token; 
-		} 
+		}  
 
-		if (ch == '\n') lineNum++; 
-		} 
-		
+		if (ch == '\n') lineNum++;
+
+		}
 		token.tokenType = LEXICAL_ERROR; 
 		token.tokenInstance = str;
-                token.lineNumber = lineNum;	
+                token.lineNumber = lineNum;	 
 		
 		return token; 
-		} 
-
+		}  
+		
 Token createToken(string instance, int final_state) {
-	// DEBUG:cout << "Creating token with instance: " << instance << endl;
+	cout << "Creating token with instance: " << instance << endl;
 	Token token;
 	
 	// Final state tokens: 
@@ -163,7 +167,6 @@ Token createToken(string instance, int final_state) {
 		return token;
 }
 
-
 int getFSAColumn(char input) { 
 	if (isalpha(input)) { 
 		if (input == 'x') { 
@@ -199,7 +202,6 @@ int getFSAColumn(char input) {
 			case '}': return 23; 
 			case '[': return 24; 
 			case ']': return 25;
-			//case 'EOF': return 26;
 		}
 	} 
 	return -1; // Lexical Error 
