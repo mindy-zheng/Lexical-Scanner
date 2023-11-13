@@ -30,7 +30,7 @@ const int FSA_Table[7][27] = {
 	// A-Z  a-z  0-9   WS     $     =    <<    >>    >    <    ~    :    ;    +    -    *    /    %    .    (    )    ,    {    }    [    ]  EOF 
 /* S0 */ { -1,   1,   5,    0,    2,    4,    4,    4,   4,   4,   4,   6,   6,   4,   4,   4,   4,   4,   4,   6,   6,   6,   6,   6,   6,   6,1007}, 
 /* S1 */ {  2,   2,   2, 1001, 1001, 1001, 1001, 1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001},  
-/* S2 */ {  2,   2,   2, 1001,    3,    2,    2,    2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2}, 	
+/* S2 */ {  2,   2,   2, 1001, 1001, 1001, 1001, 1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001,1001}, 	
 /* S3 */ {1003,1003,1003,1003, 1003, 1003, 1003, 1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003,1003},
 /* S4 */ {1004,1004,1004,1004, 1004, 1004, 1004, 1004,   4,   4,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004,1004},
 /* S5 */ {1005,1005,  5, 1005, 1005, 1005, 1005, 1005,1005,1005,1005,1005,1005,1005,  -1,1005,1005,1005,  -1,1005,1005,1005,1005,1005,1005,1005,1005},
@@ -54,7 +54,7 @@ Token scanner(istream &file) {
 		char ch = file.get(); 
 		int col = getFSAColumn(ch);
 		
-		//cout << "Character: " << ch << ", Column: " << col << ", State: " << state << ", Next State: " << next_state << ", String: " << str << endl;
+		cout << "Character: " << ch << ", Column: " << col << ", State: " << state << ", Next State: " << next_state << ", String: " << str << endl;
 		// Specific state cases:
 		// 1. No more than 8 characters for integer and identifiers
 		// 2. Accept '>>' and '<<' as single token
@@ -74,20 +74,26 @@ Token scanner(istream &file) {
 
 		next_state = FSA_Table[state][col]; 
 		//cout << "Current state: " << state << ", Next state: " << next_state << endl;
+		// Check if state transitioned
+		if (state != next_state) {
+			cout << "State transitioned from " << state << " to " << next_state << endl;
+	 	}
 
-		//if (!isspace(ch)) str += ch; 
+		if (!isspace(ch)) str += ch; 
 	
 		// Final state checker: 
 		if (next_state == ID_TOKEN || next_state == KEYWORD_TOKEN || next_state == COMMENT_TOKEN || next_state == OP_TOKEN || next_state == INTEGER_TOKEN || next_state == DELIMITER_TOKEN || next_state == EOF_TOKEN) {
-			token = createToken(str, next_state); 
-			instance = ""; 
-			state = 0; 
-			return token; 
-		} else if (!isspace(ch)) {
-			str += ch; 
-		} 
+			//cout << "Final state: " << next_state << ", Token string: " << str << endl;
+			if (!str.empty()) { 
+				token = createToken(str, next_state); 
+				str = ""; 
+				state = 0; 
+				return token; 
+			}
+		}
 		
 		state = next_state; 
+
 		if (next_state == 1003) { 
 			str = ""; 
 			next_state = 0; 
