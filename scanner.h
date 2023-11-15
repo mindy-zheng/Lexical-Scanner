@@ -6,14 +6,20 @@
 #include "token.h"
 
 using namespace std; 
+
+extern unordered_map<string, string> keyword_map; 
+extern unordered_map<string, string> op_map; 
+extern unordered_map<string, string> delimiter_map; 
+
  
-void printFSATable(int col, int state);
-Token scanner(istream &file); // Get next token
+int scanner(string &, Token &); 
 int getFSAColumn(char ch); 
-void lexicalError(int lineNum); // Throws error
-Token createToken(string instance, int final_state); 
-char filter(istream &file);
-tokenID convertIntToTokenID(int state); 
-	
+void lexicalError(int lineNum);
+int opCheck(char ch);
+int delCheck(char ch); 
+int keywordCheck(Token &token); 
+void init_maps(); 
+void assignOp(Token &token); 
+ 
 
 #endif 

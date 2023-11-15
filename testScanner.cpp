@@ -6,7 +6,6 @@ using namespace std;
 // Matching tokenID using unordered map
 unordered_map<tokenID, string, tokenID_hash> token_names = {
         { ID_TOKEN, "Identifier"},
-        { COMMENT_TOKEN, "Comment" },
         { KEYWORD_TOKEN, "Keyword"},
         { OP_TOKEN, "Operator"},
         { INTEGER_TOKEN, "Integer"},
