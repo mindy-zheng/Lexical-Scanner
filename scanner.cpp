@@ -1,140 +1,263 @@
 #include "token.h" 
 #include "scanner.h"
 #include <iostream>
-#include <fstream>
-#include <cctype>  
-#include <fstream>
+#include <fstream> 
 #include <stdlib.h> 
 #include <string> 
-#include <stdio.h>
-#include <unordered_map> 
 
 using namespace std;
 
 /* After designing FSA, represent the 2-d array representation for the FSA as array of integers
 
-This FSA should recognize repeat operator and delimiter characters and stay in the respective state until recognized as a token. 
+This FSA should recognize repeat operator and delimiter characters and stay in the respective state until recognized as a token.
+*/  
 
-S1 - ID_TOKEN; S2 - INTEGER_TOKEN; S3 - OPERATOR_TOKEN; S4 - DELIMITER_TOKEN
-Final States: ID - 1001, INT - 1002, OP - 1003, DEL - 1004, EOF - 1005
- */
+typedef enum {
+	LEXICAL_ERROR = -1, 
+	s1 = 0, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22,
+	FINAL = 1001, 
+} states; 
 
-const int FSA_Table[5][6] = { 
-	//  A-Z   a-z   0-9    OP    WS   DEL   EOF
-/* S0 */ {   -1,    1,    2,    3,    0,    4, 1005}, 
-/* S1 */ {    1,    1,    1, 1001, 1001, 1001, 1001},
-/* S2 */ { 1002, 1002,    2, 1002, 1002, 1002, 1002},
-/* S3 */ { 1003, 1003, 1003, 1003, 1003, 1003, 1003},
-/* S4 */ { 1004, 1004, 1004, 1004, 1004, 1004, 1004},
+const int max_keywords = 11; 
+const char *keywords[] = { 
+	"xopen", "xclose", "xloop", "xdata", "xexit", "xin", "xout", "xcond", "xthen", "xlet", "xfunc"}; 
+const int max_length = 8; // for int constants and keywords
+int lineNum = 1; 
+
+const int FSA_Table[23][25] = 
+{
+         // a-z   A-Z   0-9    WS     =     <     >     ~     :     ;     +     -     *     /     %     .     (     )     ,     {     }     [     ]     $   EOF   
+/* S1  */ {  s2,  -1,    s3,   s1,   s4,   s5,   s6,   s7,   s8,   s9,  s10,  s11,  s12,  s13,  s14,  s15,  s16,  s17,  s18,  s19,  s20,  s21,  s22, 1001, 1001},
+/* S2  */ {  s2,  -1,    s2, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},  
+/* S3  */ {1001, 1001,   s3, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},  
+/* S4  */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001}, 
+/* S5  */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001}, 
+/* S6  */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S7  */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S8  */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S9  */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S10 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S11 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S12 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S13 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S14 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S15 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S16 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S17 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S18 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S19 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S20 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S21 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S22 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
+/* S23 */ {1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001},
 };
 
-	// Specific state cases:
-		// 1. No more than 8 characters for integer and identifiers
-		// 2. Accept '>>' and '<<' as single token
-		// 3. keyword identifier -- x followed by keyword
+character next_ch; 
+character filter(istream &FILE) { 
+	character input; 
+	char ch = FILE.get(); 
+	int col = getFSAColumn(ch);
 	
-int current_index; // index for token 
+	//DEBUG: cout << "Current ch: " << ch << ", FSA Column: " << col << endl;
+
+	while (col == COMMENT) { 
+		do { 
+			ch = FILE.get(); 
+			if (ch == '\n') { 
+				lineNum++; 
+			}
+		} while ( ch != '$'); 
+		
+		ch = FILE.get(); 
+		col = getFSAColumn(ch); 
+	} 
+
+	if (col >= LOWERCASE && col <= END) { 
+		input.value = ch; 
+		input.FSAColumn = col; 
+		input.lineNum = lineNum; 
+
+		if (ch == '\n') { 
+			lineNum++; 
+		} 
+		
+		return input; 
+	} else {
+		lexicalError(lineNum); 
+		exit(col); 
+	}
+}
 
 
+void lookahead_ch(istream &FILE) { 
+	next_ch = filter(FILE); 
+} 
 
-int opCheck(char ch) { 
-	for (int i = 0; i < 10; i++) { 
-		if (ch == op[i]) { 
-			return 1; 
+Token token; 
+
+Token scanner(istream &FILE) { 
+	states curr_state = s1; // initial state 
+	
+	//states next_state; 
+	states next_state; 
+
+	//Token token; 
+	// store instance of token: 
+	string instance = ""; 
+	
+	while (curr_state != 1001) { 
+		next_state = static_cast<states>(FSA_Table[curr_state][next_ch.FSAColumn]); 
+		//DEBUG: cout << "Current State: " << curr_state << ", Next State: " << next_state << ", Next Character: " << next_ch.value << endl;
+		if (next_state == -1) {
+			lexicalError(next_ch.lineNum); 
+		}
+
+		if (curr_state == 5 && next_ch.value == '>') {
+            		next_ch = filter(FILE); // Move to the next character after '>'
+            		instance = "<<"; // Set the instance to ">>"
+            		next_state = FINAL; // Set the next state to the final state
+        	}
+
+		if (curr_state == 6 && next_ch.value == '<') {
+            		next_ch = filter(FILE); // Move to the next character after '>'
+            		instance = "<<"; // Set the instance to ">>"
+            		next_state = FINAL; // Set the next state to the final state
+        	}
+
+
+		// Final state 
+		if (next_state == FINAL) { 
+			token.tokenType = static_cast<tokenID>(curr_state + max_keywords);
+			token.tokenInstance = instance; 
+			token.lineNumber = lineNum;
+
+			//cout << "Token Instance: " << instance << ", Token ID: " << token.tokenType << endl;
+			
+			if (curr_state == s2) { 
+				for (int i = 0; i < max_keywords; i++) { 
+					if (keywords[i] == token.tokenInstance) { 
+						token.tokenType = static_cast<tokenID>(i); 
+						break;
+					}
+				}
+			}
+			return token; 
+		} else { 
+			if (next_ch.FSAColumn != WS) { 
+				instance += next_ch.value;
+			} 
+
+			curr_state = next_state; 
+			next_ch = filter(FILE); 
+		
+			if (instance.length() == max_length) { 
+				//token.tokenType = static_cast<tokenID>(curr_state);
+				token.tokenType = static_cast<tokenID>(curr_state + max_keywords);
+				token.tokenInstance = instance; 
+				token.lineNumber = next_ch.lineNum; 
+				return token; 
+			} 
 		}
 	}
-	return 0; 
+	
+	return token;
+
 }
 
-int delCheck(char ch) { 
-	for (int i = 0; i < 9; i++) { 
-		if (ch == delimiter[i]) { 
-			return 1; 
-		} 
-	}
-	return 0; 
-}
-
-int keywordCheck(Token &token) {
-        for (int i = 0; i < 11; i++) {
-                if (token.tokenInstance == keywords[i]) {
-                        token.tokenInstance == KEYWORD_map[tokenInstance];
-                        return i;
-                }
-        }
-        return -1;
-}
-
+// a-z   A-Z   0-9    WS     =     <     >     ~     :     ;     +     -     *     /     %     .     (     )     ,     {     }     [     ]     $   EOF
+/* 
+enum token_names {
+        LOWERCASE,
+        UPPERCASE,
+        INTEGER,
+        WS,
+        EQUAL,
+        LESS,
+        GREATER,
+        TILDE,
+        COLON,
+        SEMICOLON,
+        PLUS,
+        MINUS,
+        MULTIPLY,
+        DIVISION,
+        PERCENT,
+        PERIOD,
+        LPARENTHESIS,
+        RPARENTHESIS,
+        COMMA,
+        LBRACE,
+        RBRACE,
+        LBRACKET,
+        RBRACKET,
+        COMMENT,
+        END
+};
+*/ 
 int getFSAColumn(char ch) {
-	// Case: letter
-	if (isalpha(ch)) {
-		// lowercase letter 
-		if (islower(ch)) { 
-			return 1;
-		} else { 
-			return 0;; 
-		} 
-	} else if (isdigit(ch)) { 
-		return 3; 
-	} else if (opCheck(ch)) {
-		return 4; 
-	} else if (isspace(ch)) {
-		return 5;
-	} else if (delCheck(ch)) { 
-		return 6; 
-	} else { 
-		return -1; 
+	if (islower(ch)) { 
+		return LOWERCASE;
+	}
+	if (isupper(ch)) { 
+		return UPPERCASE;
 	} 
+	if (isdigit(ch)) { 
+		return INTEGER;
+	}
+	if (isspace(ch)) { 
+		return WS; 
+	} 
+	if (!islower(ch) && !isupper(ch) && !isdigit(ch) && !isspace(ch)) { 
+		switch(ch) { 
+			case '=': 
+				return EQUAL; 
+			case '<': 
+				return LESS;
+			case '>': 
+				return GREATER; 
+			case '~':
+				return TILDE;
+			case ':': 
+				return COLON; 
+			case ';': 
+				return SEMICOLON;
+			case '+': 
+				return PLUS;
+			case '-': 
+				return MINUS; 
+			case '*': 
+				return MULTIPLY;
+			case '/': 
+				return DIVISION;
+			case '%': 
+				return PERCENT; 
+			case '.': 
+				return PERIOD;
+			case '(': 
+				return LPARENTHESIS;
+			case ')': 
+				return RPARENTHESIS;
+			case ',':
+				return COMMA;
+			case '{': 
+				return LBRACE;
+			case '}': 
+				return RBRACE; 
+			case '[': 
+				return LBRACKET;
+			case ']':
+				return RBRACKET;
+			case EOF: 
+				return END; 
+			case '$': 
+				return COMMENT;
+			default: 
+				return -1;
+			}
+	}
 }
 
 void lexicalError(int lineNum) { 
 	cerr << "LEXICAL ERROR - line: " << lineNum << endl; 
 } 
-
-void init_maps() { 
-	keyword_map = {
-		{"xopen", "xopen_tk"}, 
-		{"xclose", "xclose_tk"}, 
-		{"xloop", "xloop_tk"}, 
-		{"xdata", "xdata_tk"}, 
-		{"xexit", "xexit_tk"},
-		{"xin", "xin_tk"},
-		{"xout", "xout_tk"}, 
-		{"xcond", "xcond_tk"},
-		{"xthen", "xthen_tk"},
-		{"xlet", "xlet_tk"}, 
-		{"xfunc", "xfunc"} 
-	}; 
-	
-	op_map = { 
-		{"=", "equal_tk"}, 
-		{"<", "lessthan_tk"}, 
-		{">", "greaterthan_tk"}, 
-		{"<<", "lessless_tk"}, 
-		{">>", "greatergreater_tk"}, 
-		{"~", "tilde_tk"}, 
-		{"+", "plus_tk"}, 
-		{"-", "minus_tk"}, 
-		{"*", "mult_tk"}, 
-		{"/", "slash_tk"}, 
-		{"%", "percent_tk"}, 
-		{".", "period_tk"}
-	};
-
-	delimiter_map = { 
-		{":", "colon_tk"}, 
-		{";", "semicolon_tk"}, 
-		{"(", "lparenth_tk"}, 
-		{")", "rparenth_tk"}, 
-		{",", "comma_tk"}, 
-		{"{", "lbracket_tk"}, 
-		{"}", "rbracket_tk"}, 
-		{"[", "lbrace_tk"}, 
-		{"]", "rbrace_tk"}
-	};
-}
-
-void assignOp(Token &token) { 
-	token.tokenInstance.assign(op_map[token.tokenInstance]);
-}
 

@@ -2,31 +2,43 @@
 #include <iostream> 
 #include <iomanip>
 #include <fstream> 
+#include "token.h"
+#include "scanner.h" 
+
 using namespace std; 
 
 int main(int argc, char *argv[]) {
-        string file;
-
-	if (argc > 1) { 
-		file = string(argv[1]); // stores command line argument
-                // If last 4 characters aren't .f23, then append .f23
-                if (file.substr(file.size()-4) != ".f23") {
-                	file += ".f23";
-        }
+	ifstream inFile; 
+	istream *input_stream;  
+	string file; 
 	
-	// Pass file to testScanner
-	
-	ifstream inFile(file); 
-	if (!inFile) { 
-		cerr << "Error: file not found" << endl; 
+	if (argc > 2) { 
+		cout << "Too many arguments passed." << endl; 
 		return 1; 
-	} 
-	testScanner(inFile); 
-	inFile.close(); 
-	} else { 
-		// if no filename, grab user input: 
-		testScanner(cin); 
 	}
+
+	if (argc == 1) {
+        	input_stream = &cin; // stdin
+    	} else {
+		file = string(argv[1]); 
+		if (file.substr(file.size()-4) != ".f23") {
+                        file += ".f23";
+                }
+		inFile.open(file); 
+		if (!inFile.is_open()) { 
+			cout << "Error opening the file." << endl; 
+			return 1; 
+		} else { 
+			input_stream = &inFile; 
+		} 
+	} 
+
+	// Pass file to testScanner
+	testScanner(*input_stream); 
+	if (inFile.is_open()) { 
+		inFile.close(); 
+	} 
+
 	return 0; 
 }
 

@@ -5,17 +5,10 @@
 
 #include <iostream> 
 #include <string> 
-#include <unordered_map> 
-#include <map> 
 
 using namespace std; 
 
 enum tokenID {
-	// ID, INT, EOF: 
-	EOF_TOKEN, 
-	IDENTIFIER_TOKEN,
-	INTEGER_TOKEN, 
-	
 	//Keywords
 	XOPEN_TOKEN, 
 	XCLOSE_TOKEN, 
@@ -29,22 +22,25 @@ enum tokenID {
 	XLET_TOKEN,
 	XFUNC_TOKEN,
 
-	// Operators: =, >>, <<, >, <, ~, +, -, *, /, %
+	// ID, INT
+	EOF_TOKEN,
+	IDENTIFIER_TOKEN,
+	INTEGER_TOKEN,
+			
 	EQUAL_TOKEN,
-	GREATERGREATER_TOKEN, 
-	LESSLESS_TOKEN,
+	//GREATERGREATER_TOKEN, 
+	//LESSLESS_TOKEN,
+	LESS_TOKEN,
 	GREATER_TOKEN,
-	LESS_TOKEN, 
 	TILDE_TOKEN, 
+	COLON_TOKEN,
+        SEMICOLON_TOKEN,
 	PLUS_TOKEN, 
 	SUBTRACT_TOKEN, 
 	MULTIPLY_TOKEN, 
 	DIVIDE_TOKEN, 
 	PERCENT_TOKEN, 
 	
-	// Delimiters: :, ;, ., ',', (, ), {, }, [, ]
-	COLON_TOKEN, 
-	SEMICOLON_TOKEN, 
 	PERIOD_TOKEN, 
 	COMMA_TOKEN, 
 	LPARENTHESIS_TOKEN,
@@ -52,8 +48,16 @@ enum tokenID {
 	LBRACE_TOKEN, 
 	RBRACE_TOKEN, 
 	LBRACKET_TOKEN,
-	RBRACKET_TOKEN
+	RBRACKET_TOKEN,
+	GREATERGREATER_TOKEN,
+	LESSLESS_TOKEN,
 };
+
+
+
+
+
+
 
 typedef struct Token { 
 	tokenID tokenType; 
